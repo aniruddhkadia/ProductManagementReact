@@ -1,10 +1,22 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, User, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { loginSchema, type LoginFormValues } from "../validations/auth";
 import { useAuthStore } from "../store/authStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,6 +29,8 @@ const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -24,6 +38,8 @@ const LoginPage: React.FC = () => {
       rememberMe: false,
     },
   });
+
+  const rememberMe = watch("rememberMe");
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -50,122 +66,123 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0a0a0a] text-white p-4">
-      <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl shadow-2xl p-8 space-y-8 animate-in fade-in zoom-in duration-500">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            Welcome Back
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Enter your credentials to access the dashboard
-          </p>
-        </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm transition-all duration-300">
-            {error}
+    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md animate-in fade-in zoom-in duration-500 border-border">
+        <CardHeader className="space-y-2 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
+              <Package size={28} />
+            </div>
           </div>
-        )}
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            Welcome Back
+          </CardTitle>
+          <CardDescription>
+            Enter your credentials to access the dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm transition-all duration-300">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">
-                Username
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-500 transition-colors">
-                  <User size={18} />
-                </div>
-                <input
+              <Label htmlFor="username">Username</Label>
+              <div className="relative">
+                <Input
+                  id="username"
                   {...register("username")}
-                  type="text"
                   placeholder="emilys"
-                  className={`w-full bg-white/5 border ${errors.username ? "border-red-500/50" : "border-white/10"} rounded-xl py-2.5 pl-10 pr-4 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 transition-all text-sm`}
+                  className={
+                    errors.username
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }
                 />
               </div>
               {errors.username && (
-                <p className="text-xs text-red-400 mt-1 ml-1">
+                <p className="text-xs text-destructive mt-1">
                   {errors.username.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">
-                Password
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-500 transition-colors">
-                  <Lock size={18} />
-                </div>
-                <input
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`w-full bg-white/5 border ${errors.password ? "border-red-500/50" : "border-white/10"} rounded-xl py-2.5 pl-10 pr-10 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 transition-all text-sm`}
+                  className={`pr-10 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1 ml-1">
+                <p className="text-xs text-destructive mt-1">
                   {errors.password.message}
                 </p>
               )}
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center space-x-2 cursor-pointer group">
-              <input
-                {...register("rememberMe")}
-                type="checkbox"
-                className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-600 focus:ring-offset-0 focus:ring-0 transition-all"
-              />
-              <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                Remember me
-              </span>
-            </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) =>
+                    setValue("rememberMe", checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="rememberMe"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Remember me
+                </Label>
+              </div>
+              <a
+                href="#"
+                className="text-sm font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
+              >
+                Forgot password?
+              </a>
+            </div>
+
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <p className="text-center text-sm text-muted-foreground w-full">
+            Don't have an account?{" "}
             <a
               href="#"
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              className="font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
             >
-              Forgot password?
+              Get started
             </a>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-2.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="animate-spin" size={18} />
-                <span>Signing In...</span>
-              </>
-            ) : (
-              <span>Sign In</span>
-            )}
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-gray-500">
-          Don't have an account?{" "}
-          <a
-            href="#"
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            Get started
-          </a>
-        </p>
-      </div>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
