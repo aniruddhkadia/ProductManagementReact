@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Outlet,
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -57,6 +63,17 @@ const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      navigate(`/products?search=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      navigate("/products");
+    }
+  };
 
   useEffect(() => {
     if (isDesktop) {
@@ -241,17 +258,22 @@ const AppLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
-            <div className="hidden lg:flex items-center relative group">
+            <form
+              onSubmit={handleGlobalSearch}
+              className="hidden lg:flex items-center relative group"
+            >
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
                 size={18}
               />
               <Input
                 type="text"
-                placeholder="Search anything..."
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-gray-100 dark:bg-white/5 border-transparent focus-visible:ring-blue-500/50 pl-10 w-64 shadow-none"
               />
-            </div>
+            </form>
 
             <Button
               variant="ghost"
