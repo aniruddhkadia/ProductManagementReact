@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Outlet,
-  Link,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
