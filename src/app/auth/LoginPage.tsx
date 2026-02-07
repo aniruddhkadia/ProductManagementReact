@@ -3,8 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { loginSchema, type LoginFormValues } from "../validations/auth";
-import { useAuthStore } from "../store/authStore";
+import { loginSchema, type LoginFormValues } from "@/lib/validations";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,7 +24,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { login } = useAuth();
 
   const {
     register,
@@ -35,6 +35,8 @@ const LoginPage: React.FC = () => {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
+      username: "",
+      password: "",
       rememberMe: false,
     },
   });
@@ -47,19 +49,10 @@ const LoginPage: React.FC = () => {
 
     // Mocking API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (data.username === "emilys" && data.password === "emilyspass") {
-        setAuth(
-          { id: "1", name: "Emily User", email: "emily@example.com" },
-          "mock-jwt-token",
-        );
-        navigate("/");
-      } else {
-        setError("Invalid username or password");
-      }
-    } catch (err) {
-      setError("An error occurred during login");
+      await login(data);
+      navigate("/");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid username or password");
     } finally {
       setIsLoading(false);
     }

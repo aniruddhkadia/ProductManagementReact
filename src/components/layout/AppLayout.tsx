@@ -7,7 +7,6 @@ import {
   Settings,
   ChevronLeft,
   Menu,
-  Bell,
   Search,
   LogOut,
   User as UserIcon,
@@ -15,7 +14,8 @@ import {
   Moon,
   ChevronRight,
 } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/hooks/use-auth";
+import { useUIStore } from "@/stores/uiStore";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,35 +42,28 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 const AppLayout: React.FC = () => {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1023px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { sidebarExpanded, toggleSidebar, setSidebarExpanded } = useUIStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Initialize sidebar state based on screen size
   useEffect(() => {
-    if (isTablet) {
-      setIsSidebarOpen(false); // Collapsed by default on tablet
-    } else if (isDesktop) {
-      setIsSidebarOpen(true); // Open by default on desktop
-    } else {
-      setIsSidebarOpen(false); // Closed on mobile (uses overlay)
+    if (isMobile) {
+      setSidebarExpanded(false);
     }
-  }, [isDesktop, isTablet]);
+  }, [isMobile, setSidebarExpanded]);
 
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isDesktop) {
-      localStorage.setItem("sidebar-expanded", JSON.stringify(isSidebarOpen));
+      localStorage.setItem("sidebar-expanded", JSON.stringify(sidebarExpanded));
     }
-  }, [isSidebarOpen, isDesktop]);
+  }, [sidebarExpanded, isDesktop]);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const handleLogout = () => {
@@ -82,13 +75,13 @@ const AppLayout: React.FC = () => {
   const breadcrumbs = currentPath.split("/").filter(Boolean);
 
   return (
-    <div className="min-h-screen w-screen bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 flex overflow-hidden">
+    <div className="min-h-screen w-full bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 flex overflow-hidden">
       {/* Sidebar - Desktop/Tablet */}
       {!isMobile && (
         <aside
           className={cn(
             "flex flex-col bg-background border-r border-border transition-all duration-300 ease-in-out z-30",
-            isSidebarOpen ? "w-64" : "w-20",
+            sidebarExpanded ? "w-64" : "w-20",
           )}
         >
           <div className="h-16 flex items-center px-6 border-b border-border">
@@ -96,7 +89,7 @@ const AppLayout: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shrink-0">
                 <Package size={20} />
               </div>
-              {isSidebarOpen && (
+              {sidebarExpanded && (
                 <span className="font-bold text-lg tracking-tight truncate">
                   ProManager
                 </span>
@@ -127,12 +120,12 @@ const AppLayout: React.FC = () => {
                         : "text-muted-foreground group-hover:text-accent-foreground",
                     )}
                   />
-                  {isSidebarOpen && (
+                  {sidebarExpanded && (
                     <span className="font-medium text-sm truncate">
                       {item.label}
                     </span>
                   )}
-                  {!isSidebarOpen && (
+                  {!sidebarExpanded && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 border border-border">
                       {item.label}
                     </div>
@@ -213,7 +206,7 @@ const AppLayout: React.FC = () => {
               onClick={toggleSidebar}
               className="hidden md:flex text-muted-foreground"
             >
-              {isSidebarOpen ? (
+              {sidebarExpanded ? (
                 <ChevronLeft size={20} />
               ) : (
                 <ChevronRight size={20} />
@@ -267,15 +260,6 @@ const AppLayout: React.FC = () => {
               className="text-muted-foreground"
             >
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground relative"
-            >
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#111]"></span>
             </Button>
 
             <div className="h-8 w-px bg-border mx-1 hidden sm:block"></div>

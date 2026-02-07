@@ -1,19 +1,22 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { productSchema, type ProductFormValues } from "@/validations/product";
+import { productSchema, type ProductFormValues } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, Loader2, Upload, X, Plus } from "lucide-react";
-import { useCategories } from "@/hooks/useProducts";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Upload, X, Plus } from "lucide-react";
+import { useCategories } from "@/hooks/use-products";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { uploadToCloudinary } from "@/services/upload.service";
+import { Progress } from "@/components/ui/progress";
 
 interface ProductFormProps {
   initialData?: Partial<ProductFormValues>;
@@ -33,6 +36,9 @@ export default function ProductForm({
   const [imagesPreviews, setImagesPreviews] = useState<string[]>(
     initialData?.images || [],
   );
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const {
     register,
@@ -58,27 +64,76 @@ export default function ProductForm({
 
   const selectedCategory = watch("category");
 
-  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateFile = (file: File) => {
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Only JPG, PNG and WebP images are allowed.");
+      return false;
+    }
+    if (file.size > maxSize) {
+      setUploadError("Image size must be less than 5MB.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleThumbnailUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Mock upload - in real app, use Cloudinary API
-      const url = URL.createObjectURL(file);
-      setThumbnailPreview(url);
-      setValue("thumbnail", url, { shouldValidate: true });
+      if (!validateFile(file)) return;
+
+      setUploadError(null);
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      try {
+        const url = await uploadToCloudinary(file, (progress) => {
+          setUploadProgress(progress);
+        });
+        setThumbnailPreview(url);
+        setValue("thumbnail", url, { shouldValidate: true });
+      } catch (error) {
+        setUploadError("Failed to upload thumbnail.");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
-  const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newPreviews: string[] = [];
+    if (files && files.length > 0) {
+      setUploadError(null);
+      const newUrls: string[] = [];
+
       for (let i = 0; i < files.length; i++) {
-        newPreviews.push(URL.createObjectURL(files[i]));
+        const file = files[i];
+        if (!validateFile(file)) continue;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+          const url = await uploadToCloudinary(file, (progress) => {
+            setUploadProgress(progress);
+          });
+          newUrls.push(url);
+        } catch (error) {
+          setUploadError(`Failed to upload one or more images.`);
+        }
       }
-      setImagesPreviews((prev) => [...prev, ...newPreviews]);
-      setValue("images", [...(watch("images") || []), ...newPreviews], {
+
+      const updatedImages = [...(watch("images") || []), ...newUrls];
+      setImagesPreviews(updatedImages);
+      setValue("images", updatedImages, {
         shouldValidate: true,
       });
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -132,6 +187,7 @@ export default function ProductForm({
               <Input
                 id="price"
                 type="number"
+                step="0.01"
                 {...register("price")}
                 className={cn(errors.price && "border-destructive")}
               />
@@ -146,6 +202,7 @@ export default function ProductForm({
               <Input
                 id="discountPercentage"
                 type="number"
+                step="0.01"
                 {...register("discountPercentage")}
               />
             </div>
@@ -184,34 +241,33 @@ export default function ProductForm({
 
           <div className="space-y-2">
             <Label>Category</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-between font-normal",
-                    !selectedCategory && "text-muted-foreground",
-                    errors.category && "border-destructive",
-                  )}
-                >
-                  {selectedCategory || "Select a category"}
-                  <ChevronDown size={16} className="opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
+            <Select
+              value={selectedCategory}
+              onValueChange={(value) =>
+                setValue("category", value, { shouldValidate: true })
+              }
+            >
+              <SelectTrigger
+                className={cn(
+                  "w-full capitalize",
+                  errors.category && "border-destructive",
+                  !selectedCategory && "text-muted-foreground",
+                )}
+              >
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
                 {categories?.map((cat) => (
-                  <DropdownMenuItem
-                    key={cat}
-                    onClick={() =>
-                      setValue("category", cat, { shouldValidate: true })
-                    }
+                  <SelectItem
+                    key={cat.slug}
+                    value={cat.slug}
                     className="capitalize"
                   >
-                    {cat}
-                  </DropdownMenuItem>
+                    {cat.name}
+                  </SelectItem>
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </SelectContent>
+            </Select>
             {errors.category && (
               <p className="text-xs text-destructive">
                 {errors.category.message}
@@ -224,12 +280,29 @@ export default function ProductForm({
         <div className="space-y-6">
           <div className="space-y-4">
             <Label>Product Thumbnail</Label>
+            {uploadError && (
+              <p className="text-sm font-medium text-destructive px-3 py-2 bg-destructive/10 rounded-md border border-destructive/20">
+                {uploadError}
+              </p>
+            )}
             <div
               className={cn(
                 "relative aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center bg-muted/30 transition-colors hover:bg-muted/50 overflow-hidden",
                 errors.thumbnail && "border-destructive",
               )}
             >
+              {isUploading && (
+                <div className="absolute inset-0 z-10 bg-background/80 flex flex-col items-center justify-center p-6 text-center">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+                  <p className="text-sm font-medium mb-4">
+                    Uploading to Cloudinary...
+                  </p>
+                  <Progress value={uploadProgress} className="w-full h-2" />
+                  <span className="text-xs text-muted-foreground mt-2">
+                    {uploadProgress}%
+                  </span>
+                </div>
+              )}
               {thumbnailPreview ? (
                 <>
                   <img
@@ -290,6 +363,15 @@ export default function ProductForm({
               </label>
             </div>
             <div className="grid grid-cols-3 gap-3">
+              {isUploading && !thumbnailPreview && (
+                <div className="col-span-3 space-y-2 mb-4">
+                  <div className="flex justify-between text-xs">
+                    <span>Uploading gallery images...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-1.5" />
+                </div>
+              )}
               {imagesPreviews.map((src, index) => (
                 <div
                   key={index}
@@ -309,7 +391,7 @@ export default function ProductForm({
                   </button>
                 </div>
               ))}
-              {imagesPreviews.length === 0 && (
+              {imagesPreviews.length === 0 && !isUploading && (
                 <div className="col-span-3 h-24 rounded-lg border border-dashed flex items-center justify-center bg-muted/20 text-muted-foreground text-xs italic">
                   No additional images added
                 </div>

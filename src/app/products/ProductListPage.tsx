@@ -1,16 +1,23 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/use-products";
 import { ProductTable } from "@/components/products/ProductTable";
 import { ProductFilters } from "@/components/products/ProductFilters";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { Product } from "@/types";
+import type { Product } from "@/types/product.types";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import productService from "@/services/productService";
-import { ProductDetail } from "@/components/products/ProductDetail";
-import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import productService from "@/services/product.service";
+import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,14 +25,13 @@ export default function ProductListPage() {
   const queryClient = useQueryClient();
 
   // State for view/delete
-  const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [bulkDeleteIds, setBulkDeleteIds] = useState<number[] | null>(null);
 
   const page = parseInt(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
-  const limit = 10;
+  const limit = parseInt(searchParams.get("limit") || "10");
   const skip = (page - 1) * limit;
 
   const { data, isLoading } = useProducts({ limit, skip, search, category });
@@ -59,10 +65,10 @@ export default function ProductListPage() {
         ["products", { limit, skip, search, category }],
         context?.previousProducts,
       );
-      alert("Failed to delete product. Rolling back.");
+      toast.error("Failed to delete product. Rolling back.");
     },
     onSuccess: () => {
-      alert("Product deleted successfully!");
+      toast.success("Product deleted successfully!");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -88,6 +94,14 @@ export default function ProductListPage() {
     });
   };
 
+  const handleLimitChange = (value: string) => {
+    setSearchParams((prev) => {
+      prev.set("limit", value);
+      prev.set("page", "1");
+      return prev;
+    });
+  };
+
   const handlePageChange = (newPage: number) => {
     setSearchParams((prev) => {
       prev.set("page", newPage.toString());
@@ -99,20 +113,12 @@ export default function ProductListPage() {
     setSearchParams({});
   };
 
-  const handleView = (product: Product) => {
-    setViewProduct(product);
-  };
-
   const handleEdit = (product: Product) => {
     navigate(`/products/edit/${product.id}`);
   };
 
   const handleDelete = (id: number) => {
     setDeleteId(id);
-  };
-
-  const handleBulkDelete = (ids: number[]) => {
-    setBulkDeleteIds(ids);
   };
 
   const confirmDelete = async () => {
@@ -127,10 +133,10 @@ export default function ProductListPage() {
         await Promise.all(
           bulkDeleteIds.map((id) => productService.deleteProduct(id)),
         );
-        alert(`Successfully deleted ${bulkDeleteIds.length} products`);
+        toast.success(`Successfully deleted ${bulkDeleteIds.length} products`);
         queryClient.invalidateQueries({ queryKey: ["products"] });
       } catch (error) {
-        alert("Failed to delete some products");
+        toast.error("Failed to delete some products");
       } finally {
         setBulkDeleteIds(null);
       }
@@ -138,13 +144,10 @@ export default function ProductListPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className=" max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-          <p className="text-muted-foreground">
-            Manage your inventory and product listings.
-          </p>
         </div>
         <Button asChild className="gap-2">
           <Link to="/products/add">
@@ -163,76 +166,62 @@ export default function ProductListPage() {
 
       <ProductTable
         products={data?.products || []}
-        isLoading={isLoading}
-        onView={handleView}
+        loading={isLoading}
+        onView={(product) => navigate(`/products/${product.id}`)}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onBulkDelete={handleBulkDelete}
       />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{skip + 1}</span> to{" "}
-            <span className="font-medium">{Math.min(skip + limit, total)}</span>{" "}
-            of <span className="font-medium">{total}</span> products
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(Math.max(1, page - 1))}
-              disabled={page === 1}
-            >
-              <ChevronLeft size={16} className="mr-1" /> Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                // Simple pagination display: current page and surroundings
-                let pageNum = page;
-                if (page <= 3) pageNum = i + 1;
-                else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
-                else pageNum = page - 2 + i;
+      {(totalPages > 1 || limit !== 10) && (
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
+          <div className="order-2 md:order-1">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
+              Showing{" "}
+              <span className="font-medium">{total === 0 ? 0 : skip + 1}</span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(skip + limit, total)}
+              </span>{" "}
+              of <span className="font-medium">{total}</span> products
+            </p>
+          </div>
 
-                if (pageNum <= 0 || pageNum > totalPages) return null;
+          <div className="flex items-center gap-3 order-1 md:order-2">
+            <Select value={limit.toString()} onValueChange={handleLimitChange}>
+              <SelectTrigger className="w-[70px] h-9">
+                <SelectValue placeholder="10" />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50].map((v) => (
+                  <SelectItem key={v} value={v.toString()}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={page === pageNum ? "default" : "outline"}
-                    size="sm"
-                    className="w-8"
-                    onClick={() => handlePageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft size={16} className="mr-1" /> Previous
+              </Button>
+              <span className="text-sm font-medium mx-2">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages || totalPages === 0}
+              >
+                Next <ChevronRight size={16} className="ml-1" />
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-            >
-              Next <ChevronRight size={16} className="ml-1" />
-            </Button>
           </div>
         </div>
       )}
-      <ProductDetail
-        product={viewProduct}
-        isOpen={!!viewProduct}
-        onClose={() => setViewProduct(null)}
-        onEdit={(prod) => {
-          setViewProduct(null);
-          handleEdit(prod);
-        }}
-        onDelete={(id) => {
-          setViewProduct(null);
-          handleDelete(id);
-        }}
-      />
 
       <ConfirmationDialog
         isOpen={!!deleteId || !!bulkDeleteIds}

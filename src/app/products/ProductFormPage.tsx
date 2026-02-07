@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useProduct } from "@/hooks/useProducts";
-import productService from "@/services/productService";
+import { useProduct } from "@/hooks/use-products";
+import productService from "@/services/product.service";
 import ProductForm from "@/components/products/ProductForm";
-import type { ProductFormValues } from "@/validations/product";
+import type { ProductFormValues } from "@/lib/validations";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function ProductFormPage() {
   const { id } = useParams();
@@ -20,11 +21,11 @@ export default function ProductFormPage() {
       productService.addProduct({ ...data, rating: 0 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      alert("Product added successfully!"); // In a real app, use a toast
+      toast.success("Product added successfully!");
       navigate("/products");
     },
     onError: (error) => {
-      alert("Failed to add product: " + (error as any).message);
+      toast.error("Failed to add product: " + (error as any).message);
     },
   });
 
@@ -34,11 +35,11 @@ export default function ProductFormPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", id] });
-      alert("Product updated successfully!");
+      toast.success("Product updated successfully!");
       navigate("/products");
     },
     onError: (error) => {
-      alert("Failed to update product: " + (error as any).message);
+      toast.error("Failed to update product: " + (error as any).message);
     },
   });
 

@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,24 +16,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Eye,
-  Edit,
-  Trash,
-  MoreHorizontal,
-  Star,
-  ArrowUpDown,
-} from "lucide-react";
-import type { Product } from "@/types";
+import { Star, ArrowUpDown, Edit, Trash, Ellipsis, Eye } from "lucide-react";
+import { useUIStore } from "@/stores/uiStore";
+import type { Product } from "@/types/product.types";
 import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface ProductTableProps {
   products: Product[];
-  isLoading: boolean;
+  loading: boolean;
   onView: (product: Product) => void;
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
-  onBulkDelete: (ids: number[]) => void;
 }
 
 type SortConfig = {
@@ -44,13 +37,12 @@ type SortConfig = {
 
 export function ProductTable({
   products,
-  isLoading,
+  loading,
   onView,
   onEdit,
   onDelete,
-  onBulkDelete,
 }: ProductTableProps) {
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const { tableDensity } = useUIStore();
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "asc",
@@ -71,6 +63,10 @@ export function ProductTable({
       const aValue = a[sortConfig.key!];
       const bValue = b[sortConfig.key!];
 
+      if (aValue === bValue) return 0;
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+
       if (aValue < bValue) {
         return sortConfig.direction === "asc" ? -1 : 1;
       }
@@ -81,151 +77,123 @@ export function ProductTable({
     });
   }, [products, sortConfig]);
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === products.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(products.map((p) => p.id));
-    }
-  };
-
-  const toggleSelect = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-8 text-center text-muted-foreground animate-pulse">
-        Loading products...
-      </div>
-    );
-  }
+  const densityPadding = cn(
+    tableDensity === "compact" && "py-2",
+    tableDensity === "normal" && "py-4",
+    tableDensity === "spacious" && "py-6",
+  );
 
   return (
-    <div className="space-y-4">
-      {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between p-2 bg-muted rounded-md px-4">
-          <span className="text-sm font-medium">
-            {selectedIds.length} products selected
-          </span>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              onBulkDelete(selectedIds);
-              setSelectedIds([]);
-            }}
-          >
-            Bulk Delete
-          </Button>
-        </div>
-      )}
-
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]">
-                <Checkbox
-                  checked={
-                    products.length > 0 &&
-                    selectedIds.length === products.length
-                  }
-                  onCheckedChange={toggleSelectAll}
+    <div className="rounded-md border bg-card overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[80px]">Image</TableHead>
+            <TableHead
+              onClick={() => handleSort("title")}
+              className="cursor-pointer hover:text-foreground group"
+            >
+              <div className="flex items-center gap-1">
+                Title{" "}
+                <ArrowUpDown
+                  size={14}
+                  className="opacity-0 group-hover:opacity-100"
                 />
-              </TableHead>
-              <TableHead className="w-[80px]">Image</TableHead>
-              <TableHead
-                onClick={() => handleSort("title")}
-                className="cursor-pointer hover:text-foreground group"
+              </div>
+            </TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead
+              onClick={() => handleSort("price")}
+              className="cursor-pointer hover:text-foreground group text-right"
+            >
+              <div className="flex items-center justify-end gap-1">
+                Price{" "}
+                <ArrowUpDown
+                  size={14}
+                  className="opacity-0 group-hover:opacity-100"
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              onClick={() => handleSort("stock")}
+              className="cursor-pointer hover:text-foreground group text-right"
+            >
+              <div className="flex items-center justify-end gap-1">
+                Stock{" "}
+                <ArrowUpDown
+                  size={14}
+                  className="opacity-0 group-hover:opacity-100"
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              onClick={() => handleSort("rating")}
+              className="cursor-pointer hover:text-foreground group text-right"
+            >
+              <div className="flex items-center justify-end gap-1">
+                Rating{" "}
+                <ArrowUpDown
+                  size={14}
+                  className="opacity-0 group-hover:opacity-100"
+                />
+              </div>
+            </TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            [...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                {[...Array(7)].map((_, j) => (
+                  <TableCell key={j} className={densityPadding}>
+                    <div className="h-4 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : sortedProducts.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={7}
+                className="h-32 text-center text-muted-foreground italic"
               >
-                <div className="flex items-center gap-1">
-                  Title{" "}
-                  <ArrowUpDown
-                    size={14}
-                    className="opacity-0 group-hover:opacity-100"
-                  />
-                </div>
-              </TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead
-                onClick={() => handleSort("price")}
-                className="cursor-pointer hover:text-foreground group text-right"
-              >
-                <div className="flex items-center justify-end gap-1">
-                  Price{" "}
-                  <ArrowUpDown
-                    size={14}
-                    className="opacity-0 group-hover:opacity-100"
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort("stock")}
-                className="cursor-pointer hover:text-foreground group text-right"
-              >
-                <div className="flex items-center justify-end gap-1">
-                  Stock{" "}
-                  <ArrowUpDown
-                    size={14}
-                    className="opacity-0 group-hover:opacity-100"
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort("rating")}
-                className="cursor-pointer hover:text-foreground group text-right"
-              >
-                <div className="flex items-center justify-end gap-1">
-                  Rating{" "}
-                  <ArrowUpDown
-                    size={14}
-                    className="opacity-0 group-hover:opacity-100"
-                  />
-                </div>
-              </TableHead>
-              <TableHead className="w-[80px] text-right">Actions</TableHead>
+                No products found.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedProducts.map((product) => (
+          ) : (
+            sortedProducts.map((product) => (
               <TableRow key={product.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedIds.includes(product.id)}
-                    onCheckedChange={() => toggleSelect(product.id)}
-                  />
-                </TableCell>
-                <TableCell>
+                <TableCell className={densityPadding}>
                   <img
                     src={product.thumbnail}
                     alt={product.title}
-                    className="w-10 h-10 rounded-md object-cover border border-border"
+                    className="w-10 h-10 rounded-md object-cover border"
                   />
                 </TableCell>
-                <TableCell className="font-medium">{product.title}</TableCell>
-                <TableCell>{product.brand}</TableCell>
-                <TableCell>
+                <TableCell className={cn("font-medium", densityPadding)}>
+                  {product.title}
+                </TableCell>
+                <TableCell className={densityPadding}>
                   <Badge variant="secondary" className="capitalize">
                     {product.category}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">₹{product.price}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className={cn("text-right", densityPadding)}>
+                  ₹{Number(product.price).toFixed(2)}
+                </TableCell>
+                <TableCell className={cn("text-right", densityPadding)}>
                   <span
                     className={
                       product.stock < 10
-                        ? "text-destructive font-bold"
-                        : "text-muted-foreground"
+                        ? "text-red-500 font-bold"
+                        : "text-green-600 font-medium"
                     }
                   >
                     {product.stock}
                   </span>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className={cn("text-right", densityPadding)}>
                   <div className="flex items-center justify-end gap-1">
                     <Star
                       size={14}
@@ -234,36 +202,37 @@ export function ProductTable({
                     <span>{product.rating}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className={cn("text-right", densityPadding)}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal size={16} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Ellipsis size={18} />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onView(product)}>
-                        <Eye className="mr-2 h-4 w-4" /> View Details
+                        <Eye size={14} className="mr-2" /> View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(product)}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit Product
+                        <Edit size={14} className="mr-2" /> Edit Product
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="text-destructive"
                         onClick={() => onDelete(product.id)}
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
                       >
-                        <Trash className="mr-2 h-4 w-4" /> Delete
+                        <Trash size={14} className="mr-2" /> Delete Product
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

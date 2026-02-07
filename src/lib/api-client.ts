@@ -1,7 +1,8 @@
 import axios from "axios";
+import { API_BASE_URL } from "@/config/constants";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://dummyjson.com",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -9,7 +10,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("auth-token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

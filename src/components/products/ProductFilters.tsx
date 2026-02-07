@@ -1,17 +1,16 @@
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { useCategories } from "@/hooks/useProducts";
-// Simple debounce implementation below
+import { useCategories } from "@/hooks/use-products";
+import type { Category } from "@/types/product.types";
 
 interface ProductFiltersProps {
   search: string;
@@ -51,7 +50,7 @@ export function ProductFilters({
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6">
-      <div className="relative flex-1">
+      <div className="relative w-full sm:w-64">
         <Search
           size={18}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -60,35 +59,33 @@ export function ProductFilters({
           placeholder="Search products..."
           value={localSearch}
           onChange={handleSearchChange}
-          className="pl-10"
+          className="pl-10 h-10"
         />
       </div>
 
       <div className="flex gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex gap-2 items-center">
-              <Filter size={16} />
-              {category || "All Categories"}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onCategoryChange("")}>
-              All Categories
-            </DropdownMenuItem>
-            {categories?.map((cat) => (
-              <DropdownMenuItem
-                key={cat}
-                onClick={() => onCategoryChange(cat)}
+        <Select
+          value={category || "all"}
+          onValueChange={(val: string) =>
+            onCategoryChange(val === "all" ? "" : val)
+          }
+        >
+          <SelectTrigger className="w-full sm:w-48 capitalize">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories?.map((cat: Category) => (
+              <SelectItem
+                key={cat.slug}
+                value={cat.slug}
                 className="capitalize"
               >
-                {cat}
-              </DropdownMenuItem>
+                {cat.name}
+              </SelectItem>
             ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </SelectContent>
+        </Select>
 
         {(search || category) && (
           <Button variant="ghost" size="icon" onClick={onClearFilters}>

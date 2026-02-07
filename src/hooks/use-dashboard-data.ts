@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import type { Product, User } from "@/types";
+import type { Product } from "@/types/product.types";
+import type { User } from "@/types/user.types";
+import productService from "@/services/product.service";
 
-// Mock data service - replacing with actual API calls in a real app
-// For now, we'll simulate fetching data
+import { toast } from "sonner";
 
 export function useDashboardData() {
   const [loading, setLoading] = useState(true);
@@ -31,26 +32,11 @@ export function useDashboardData() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Fetch real products from API
+        const productsResponse = await productService.getProducts(100, 0);
+        const products = productsResponse.products;
 
-        // Mock Data Generation (since we don't have a real backend yet)
-        const products: Product[] = Array.from({ length: 50 }).map((_, i) => ({
-          id: i + 1,
-          title: `Product ${i + 1}`,
-          description: `Description for Product ${i + 1}`,
-          price: Math.floor(Math.random() * 2500) + 100,
-          discountPercentage: Math.floor(Math.random() * 20),
-          rating: Number((Math.random() * 2 + 3).toFixed(1)),
-          stock: Math.floor(Math.random() * 100),
-          brand: `Brand ${String.fromCharCode(65 + Math.floor(Math.random() * 5))}`,
-          category: ["Electronics", "Clothing", "Home", "Books", "Toys"][
-            Math.floor(Math.random() * 5)
-          ],
-          thumbnail: "https://placehold.co/100",
-          images: ["https://placehold.co/200"],
-        }));
-
+        // Mock users data (since we don't have a users API)
         const users: User[] = Array.from({ length: 25 }).map((_, i) => ({
           id: i + 1,
           firstName: `User`,
@@ -60,7 +46,7 @@ export function useDashboardData() {
           gender: i % 2 === 0 ? "male" : "female",
           username: `user${i + 1}`,
           password: "password",
-          image: "https://placehold.co/50",
+          image: `https://dummyjson.com/icon/user/${i + 1}`,
           birthDate: "2000-01-01",
           phone: "123-456-7890",
         }));
@@ -96,9 +82,21 @@ export function useDashboardData() {
           {} as Record<string, number>,
         );
 
-        const productsByCategory = Object.entries(categoryMap).map(
-          ([name, value]) => ({ name, value }),
-        );
+        const productsByCategoryRaw = Object.entries(categoryMap)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+
+        const topCategories = productsByCategoryRaw.slice(0, 5);
+        const otherCategories = productsByCategoryRaw.slice(5);
+
+        const productsByCategory = [...topCategories];
+        if (otherCategories.length > 0) {
+          const otherValue = otherCategories.reduce(
+            (acc, cat) => acc + cat.value,
+            0,
+          );
+          productsByCategory.push({ name: "Other", value: otherValue });
+        }
 
         // Price Range Distribution
         const priceRanges = {
@@ -138,7 +136,7 @@ export function useDashboardData() {
         // 3. Recent Products
         setRecentProducts([...products].slice(0, 5));
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+        toast.error("Failed to fetch dashboard data");
       } finally {
         setLoading(false);
       }

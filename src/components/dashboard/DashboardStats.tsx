@@ -45,36 +45,42 @@ export function DashboardStats({ stats, loading }: DashboardStatsProps) {
       value: stats.totalProducts,
       icon: Package,
       color: "text-blue-500",
+      description: "Total items in catalog",
     },
     {
       title: "Total Users",
       value: stats.totalUsers,
       icon: Users,
       color: "text-purple-500",
+      description: "Registered customers",
     },
     {
       title: "Low Stock Items",
       value: stats.lowStockItems,
       icon: AlertTriangle,
       color: "text-red-500",
+      description: "Stock count < 10",
     },
     {
       title: "Average Price",
       value: `₹${stats.averagePrice}`,
       icon: DollarSign,
       color: "text-green-500",
+      description: "Across all products",
     },
     {
       title: "Average Rating",
       value: stats.averageRating,
       icon: Star,
       color: "text-yellow-500",
+      description: "Customer satisfaction",
     },
     {
       title: "Categories",
       value: stats.categoriesCount,
       icon: Layers,
       color: "text-indigo-500",
+      description: "Product categories",
     },
   ];
 
@@ -90,6 +96,7 @@ export function DashboardStats({ stats, loading }: DashboardStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{item.value}</div>
+            <p className="text-xs text-muted-foreground">{item.description}</p>
           </CardContent>
         </Card>
       ))}
