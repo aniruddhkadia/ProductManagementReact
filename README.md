@@ -44,6 +44,7 @@ A production-ready Product Management Dashboard built for Aptech Solutions. This
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Charts**: [Recharts](https://recharts.org/)
 - **API Client**: [Axios](https://axios-http.com/)
+- **unused-imports**: [eslint-plugin-unused-imports](https://www.npmjs.com/package/eslint-plugin-unused-imports)
 
 ## 📋 Prerequisites
 
