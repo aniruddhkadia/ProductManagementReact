@@ -28,7 +28,16 @@ interface DashboardChartsProps {
   loading: boolean;
 }
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884d8",
+  "#FF6B6B",
+  "#4ECDC4",
+  "#F7DC6F",
+];
 
 export function DashboardCharts({ data, loading }: DashboardChartsProps) {
   if (loading) {

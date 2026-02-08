@@ -112,6 +112,16 @@ src/
 - **Image Upload**: The upload functionality uses Cloudinary. Please ensure valid credentials are provided in `.env` to test this feature.
 - **Data Persistence**: User session and dashboard settings are persisted in `localStorage`.
 
+## 🤖 AI & Research Assistance
+
+**This project was developed with the assistance of ChatGPT and Google Search for:**
+
+- Understanding requirements and best practices
+- Clarifying technical concepts and API usage
+- Improving code structure, documentation, and developer workflow
+
+All implementation decisions, code integration, and final output were reviewed, customized, and written by me to ensure correctness and alignment with project requirements.
+
 ---
 
 _Developed as part of the Senior Frontend Developer Assessment for Aptech Solutions._

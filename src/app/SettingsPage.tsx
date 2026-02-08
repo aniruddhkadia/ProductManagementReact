@@ -137,7 +137,7 @@ export default function SettingsPage() {
                 onValueChange={(value: string) => setPageSize(parseInt(value))}
                 className="flex gap-4"
               >
-                {[10, 20, 50, 100].map((size) => (
+                {[10, 20, 50].map((size) => (
                   <div key={size} className="flex items-center space-x-2">
                     <RadioGroupItem
                       value={size.toString()}

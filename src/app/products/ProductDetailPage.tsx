@@ -108,9 +108,6 @@ export default function ProductDetailPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Product Details</h1>
-          <p className="text-muted-foreground">
-            View and manage product information
-          </p>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import productService from "@/services/product.service";
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
+import { useUIStore } from "@/stores/uiStore";
 import {
   Select,
   SelectContent,
@@ -28,10 +29,12 @@ export default function ProductListPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [bulkDeleteIds, setBulkDeleteIds] = useState<number[] | null>(null);
 
+  const { pageSize, setPageSize } = useUIStore();
+
   const page = parseInt(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
-  const limit = parseInt(searchParams.get("limit") || "10");
+  const limit = parseInt(searchParams.get("limit") || pageSize.toString());
   const skip = (page - 1) * limit;
 
   const { data, isLoading } = useProducts({ limit, skip, search, category });
@@ -95,6 +98,8 @@ export default function ProductListPage() {
   };
 
   const handleLimitChange = (value: string) => {
+    const newLimit = parseInt(value);
+    setPageSize(newLimit);
     setSearchParams((prev) => {
       prev.set("limit", value);
       prev.set("page", "1");
@@ -172,7 +177,7 @@ export default function ProductListPage() {
         onDelete={handleDelete}
       />
 
-      {(totalPages > 1 || limit !== 10) && (
+      {(totalPages > 1 || limit !== pageSize) && (
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
           <div className="order-2 md:order-1">
             <p className="text-sm text-muted-foreground whitespace-nowrap">
