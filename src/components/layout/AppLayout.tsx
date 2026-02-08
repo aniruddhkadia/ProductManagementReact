@@ -86,7 +86,7 @@ const AppLayout: React.FC = () => {
   const breadcrumbs = currentPath.split("/").filter(Boolean);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 flex overflow-hidden">
+    <div className="h-screen w-full bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 flex overflow-hidden">
       {/* Sidebar - Desktop/Tablet */}
       {!isMobile && (
         <aside
@@ -108,7 +108,7 @@ const AppLayout: React.FC = () => {
             </div>
           </div>
 
-          <nav className="flex-1 py-6 px-3 space-y-2">
+          <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
             {navItems.map((item) => {
               const isActive = currentPath === item.path;
               return (
